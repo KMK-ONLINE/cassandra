@@ -287,7 +287,7 @@ public abstract class ExtendedFilter
             ColumnFamily pruned = data.cloneMeShallow();
             IDiskAtomFilter filter = dataRange.columnFilter(rowKey.key);
             OnDiskAtomIterator iter = filter.getColumnFamilyIterator(rowKey, data);
-            filter.collectReducedColumns(pruned, QueryFilter.gatherTombstones(pruned, iter), cfs.gcBefore(timestamp), timestamp);
+            filter.collectReducedColumns(pruned, QueryFilter.gatherTombstones(pruned, iter), rowKey, cfs.gcBefore(timestamp), timestamp);
             return pruned;
         }
 

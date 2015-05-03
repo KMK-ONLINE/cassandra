@@ -1,3 +1,6 @@
+2.0.14-1:
+ * Log the partition key with tombstone warnings (CASSANDRA-8561)
+
 2.0.14:
  * If no JMX flags are set start a localhost only JMX service
 

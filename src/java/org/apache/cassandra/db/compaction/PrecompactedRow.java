@@ -100,13 +100,14 @@ public class PrecompactedRow extends AbstractCompactedRow
             data.add(FBUtilities.closeableIterator(cf.iterator()));
         }
 
-        merge(returnCF, data, controller.cfs.indexManager.updaterFor(rows.get(0).getKey()));
+        DecoratedKey key = rows.get(0).getKey();
+        merge(returnCF, data, controller.cfs.indexManager.updaterFor(key), key);
 
         return returnCF;
     }
 
     // returnCF should already have row-level tombstones applied
-    public static void merge(final ColumnFamily returnCF, List<CloseableIterator<Column>> data, final SecondaryIndexManager.Updater indexer)
+    public static void merge(final ColumnFamily returnCF, List<CloseableIterator<Column>> data, final SecondaryIndexManager.Updater indexer, DecoratedKey key)
     {
         IDiskAtomFilter filter = new IdentityQueryFilter();
         Comparator<Column> fcomp = filter.getColumnComparator(returnCF.getComparator());
@@ -141,7 +142,7 @@ public class PrecompactedRow extends AbstractCompactedRow
         };
 
         Iterator<Column> reduced = MergeIterator.get(data, fcomp, reducer);
-        filter.collectReducedColumns(returnCF, reduced, CompactionManager.NO_GC, System.currentTimeMillis());
+        filter.collectReducedColumns(returnCF, reduced, key, CompactionManager.NO_GC, System.currentTimeMillis());
     }
 
     public RowIndexEntry write(long currentPosition, DataOutput out) throws IOException

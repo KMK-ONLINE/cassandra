@@ -183,7 +183,7 @@ public class SliceQueryFilter implements IDiskAtomFilter
         return reversed ? comparator.columnReverseComparator : comparator.columnComparator;
     }
 
-    public void collectReducedColumns(ColumnFamily container, Iterator<Column> reducedColumns, int gcBefore, long now)
+    public void collectReducedColumns(ColumnFamily container, Iterator<Column> reducedColumns, DecoratedKey key, int gcBefore, long now)
     {
         columnCounter = columnCounter(container.getComparator(), now);
         DeletionInfo.InOrderTester tester = container.deletionInfo().inOrderTester(reversed);
@@ -212,7 +212,7 @@ public class SliceQueryFilter implements IDiskAtomFilter
         }
 
         Tracing.trace("Read {} live and {} tombstoned cells", columnCounter.live(), columnCounter.ignored());
-        if (respectTombstoneThresholds() && columnCounter.ignored() > DatabaseDescriptor.getTombstoneWarnThreshold())
+        if (logger.isWarnEnabled() && respectTombstoneThresholds() && columnCounter.ignored() > DatabaseDescriptor.getTombstoneWarnThreshold())
         {
             StringBuilder sb = new StringBuilder();
             AbstractType<?> type = container.metadata().comparator;
@@ -228,8 +228,15 @@ public class SliceQueryFilter implements IDiskAtomFilter
                 sb.append(']');
             }
 
-            logger.warn("Read {} live and {} tombstoned cells in {}.{} (see tombstone_warn_threshold). {} columns was requested, slices={}, delInfo={}",
-                        columnCounter.live(), columnCounter.ignored(), container.metadata().ksName, container.metadata().cfName, count, sb, container.deletionInfo());
+            String msg = String.format("Read %d live and %d tombstoned cells in %s.%s for key: %1.512s (see tombstone_warn_threshold). %d columns were requested, slices=%1.512s",
+                                       columnCounter.live(),
+                                       columnCounter.ignored(),
+                                       container.metadata().ksName,
+                                       container.metadata().cfName,
+                                       container.metadata().getKeyValidator().getString(key.key),
+                                       count,
+                                       sb);
+            logger.warn(msg);
         }
     }
 
