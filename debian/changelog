@@ -1,3 +1,9 @@
+cassandra (2.1.18-1) unstable; urgency=medium
+
+  * Custom build with patches for CASSANDRA-13700
+
+ -- Robertus Suseno and Yap Sok Ann <pair+robertus+yap@kmkonline.co.id>  Tue, 19 Sep 2017 16:44:44 -0400
+
 cassandra (2.1.18) unstable; urgency=medium
 
   * New release
