@@ -2238,6 +2238,14 @@ public class StorageProxy implements StorageProxyMBean
 
             if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - constructionTime) > DatabaseDescriptor.getTimeout(verb))
             {
+                logger.info("Message dropped;"
+                    + " constructionTime: {},"
+                    + " timeout: {},"
+                    + " verb: {}",
+                    constructionTime,
+                    DatabaseDescriptor.getTimeout(verb),
+                    verb);
+
                 MessagingService.instance().incrementDroppedMessages(verb);
                 return;
             }
@@ -2267,7 +2275,17 @@ public class StorageProxy implements StorageProxyMBean
             if (System.currentTimeMillis() > constructionTime + DatabaseDescriptor.getTimeout(verb))
             {
                 if (MessagingService.DROPPABLE_VERBS.contains(verb()))
+                {
+                    logger.info("Message dropped;"
+                        + " constructionTime: {},"
+                        + " timeout: {},"
+                        + " verb: {}",
+                        constructionTime,
+                        DatabaseDescriptor.getTimeout(verb),
+                        verb);
+
                     MessagingService.instance().incrementDroppedMessages(verb);
+                }
                 HintRunnable runnable = new HintRunnable(FBUtilities.getBroadcastAddress())
                 {
                     protected void runMayThrow() throws Exception
