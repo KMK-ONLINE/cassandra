@@ -999,7 +999,7 @@ public class StorageProxy implements StorageProxyMBean
                 int ttl = HintedHandOffManager.calculateHintTTL(mutation);
                 if (ttl > 0)
                 {
-                    logger.debug("Adding hint for {}", target);
+                    logger.info("Adding hint for {} for mutation {}", target, mutation.toString(true));
                     writeHintForMutation(mutation, System.currentTimeMillis(), ttl, target);
                     // Notify the handler only for CL == ANY
                     if (responseHandler != null && responseHandler.consistencyLevel == ConsistencyLevel.ANY)
