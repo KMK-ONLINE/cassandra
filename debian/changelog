@@ -1,3 +1,9 @@
+cassandra (2.1.19-2) unstable; urgency=medium
+
+  * Custom build with additional logging for mutation dropped
+
+ -- Yap Sok Ann <sokann@gmail.com>  Thu, 23 Nov 2017 11:14:44 +0700
+
 cassandra (2.1.19-1) unstable; urgency=medium
 
   * Custom build with logging for mutation dropped and hint stored
