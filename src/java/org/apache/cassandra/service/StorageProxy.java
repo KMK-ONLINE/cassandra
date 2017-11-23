@@ -530,7 +530,7 @@ public class StorageProxy implements StorageProxyMBean
      */
     private static void commitPaxosLocal(final MessageOut<Commit> message, final AbstractWriteResponseHandler responseHandler)
     {
-        StageManager.getStage(MessagingService.verbStages.get(MessagingService.Verb.PAXOS_COMMIT)).maybeExecuteImmediately(new LocalMutationRunnable()
+        StageManager.getStage(MessagingService.verbStages.get(MessagingService.Verb.PAXOS_COMMIT)).maybeExecuteImmediately(new LocalMutationRunnable<Commit>()
         {
             public void runMayThrow()
             {
@@ -543,6 +543,12 @@ public class StorageProxy implements StorageProxyMBean
             protected Verb verb()
             {
                 return MessagingService.Verb.PAXOS_COMMIT;
+            }
+
+            @Override
+            protected Commit payload()
+            {
+                return message.payload;
             }
         });
     }
@@ -1076,7 +1082,7 @@ public class StorageProxy implements StorageProxyMBean
     private static void insertLocal(final Mutation mutation, final AbstractWriteResponseHandler responseHandler)
     {
 
-        StageManager.getStage(Stage.MUTATION).maybeExecuteImmediately(new LocalMutationRunnable()
+        StageManager.getStage(Stage.MUTATION).maybeExecuteImmediately(new LocalMutationRunnable<Mutation>()
         {
             public void runMayThrow()
             {
@@ -1092,6 +1098,12 @@ public class StorageProxy implements StorageProxyMBean
             protected Verb verb()
             {
                 return MessagingService.Verb.MUTATION;
+            }
+
+            @Override
+            protected Mutation payload()
+            {
+                return mutation;
             }
         });
     }
@@ -2265,7 +2277,7 @@ public class StorageProxy implements StorageProxyMBean
      * Like DroppableRunnable, but if it aborts, it will rerun (on the mutation stage) after
      * marking itself as a hint in progress so that the hint backpressure mechanism can function.
      */
-    private static abstract class LocalMutationRunnable implements Runnable
+    private static abstract class LocalMutationRunnable<T> implements Runnable
     {
         private final long constructionTime = System.currentTimeMillis();
 
@@ -2276,13 +2288,16 @@ public class StorageProxy implements StorageProxyMBean
             {
                 if (MessagingService.DROPPABLE_VERBS.contains(verb()))
                 {
+                    T payload = payload();
                     logger.info("Message dropped;"
                         + " constructionTime: {},"
                         + " timeout: {},"
-                        + " verb: {}",
+                        + " verb: {},"
+                        + " payload: {}",
                         constructionTime,
                         DatabaseDescriptor.getTimeout(verb),
-                        verb);
+                        verb,
+                        (payload instanceof Mutation) ? ((Mutation) payload).toString(true) : payload);
 
                     MessagingService.instance().incrementDroppedMessages(verb);
                 }
@@ -2308,6 +2323,7 @@ public class StorageProxy implements StorageProxyMBean
         }
 
         abstract protected MessagingService.Verb verb();
+        abstract protected T payload();
         abstract protected void runMayThrow() throws Exception;
     }
 

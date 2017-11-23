@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.concurrent.Stage;
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.Mutation;
 import org.apache.cassandra.io.IVersionedSerializer;
 import org.apache.cassandra.io.util.FileUtils;
 
@@ -139,6 +140,9 @@ public class MessageIn<T>
             .append(" TYPE:").append(getMessageType())
             .append(" VERB:").append(verb)
             .append(" SIZE:").append(payloadSize);
+        if (payload instanceof Mutation) {
+          sbuf.append(" PAYLOAD:").append(((Mutation) payload).toString(true));
+        }
         return sbuf.toString();
     }
 }
