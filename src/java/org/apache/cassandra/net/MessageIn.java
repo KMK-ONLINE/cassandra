@@ -42,19 +42,31 @@ public class MessageIn<T>
     public final Map<String, byte[]> parameters;
     public final MessagingService.Verb verb;
     public final int version;
+    public final int payloadSize;
 
     private MessageIn(InetAddress from, T payload, Map<String, byte[]> parameters, MessagingService.Verb verb, int version)
+    {
+        this(from, payload, parameters, verb, version, -1);
+    }
+
+    private MessageIn(InetAddress from, T payload, Map<String, byte[]> parameters, MessagingService.Verb verb, int version, int payloadSize)
     {
         this.from = from;
         this.payload = payload;
         this.parameters = parameters;
         this.verb = verb;
         this.version = version;
+        this.payloadSize = payloadSize;
     }
 
     public static <T> MessageIn<T> create(InetAddress from, T payload, Map<String, byte[]> parameters, MessagingService.Verb verb, int version)
     {
         return new MessageIn<T>(from, payload, parameters, verb, version);
+    }
+
+    public static <T> MessageIn<T> create(InetAddress from, T payload, Map<String, byte[]> parameters, MessagingService.Verb verb, int version, int payloadSize)
+    {
+        return new MessageIn<T>(from, payload, parameters, verb, version, payloadSize);
     }
 
     public static <T2> MessageIn<T2> read(DataInput in, int version, int id) throws IOException
@@ -95,9 +107,9 @@ public class MessageIn<T>
             serializer = (IVersionedSerializer<T2>) callback.serializer;
         }
         if (payloadSize == 0 || serializer == null)
-            return create(from, null, parameters, verb, version);
+            return create(from, null, parameters, verb, version, payloadSize);
         T2 payload = serializer.deserialize(in, version);
-        return MessageIn.create(from, payload, parameters, verb, version);
+        return MessageIn.create(from, payload, parameters, verb, version, payloadSize);
     }
 
     public Stage getMessageType()
@@ -123,7 +135,10 @@ public class MessageIn<T>
     public String toString()
     {
         StringBuilder sbuf = new StringBuilder();
-        sbuf.append("FROM:").append(from).append(" TYPE:").append(getMessageType()).append(" VERB:").append(verb);
+        sbuf.append("FROM:").append(from)
+            .append(" TYPE:").append(getMessageType())
+            .append(" VERB:").append(verb)
+            .append(" SIZE:").append(payloadSize);
         return sbuf.toString();
     }
 }
