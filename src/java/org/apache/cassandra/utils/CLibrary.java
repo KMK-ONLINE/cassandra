@@ -21,13 +21,19 @@ import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.IllegalAccessException;
 import java.lang.reflect.Field;
+import java.nio.channels.SocketChannel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.jna.LastErrorException;
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.IntByReference;
+
+import sun.nio.ch.SocketAdaptor;
 
 public final class CLibrary
 {
@@ -104,6 +110,7 @@ public final class CLibrary
     private static native int mlockall(int flags) throws LastErrorException;
     private static native int munlockall() throws LastErrorException;
     private static native int fcntl(int fd, int command, long flags) throws LastErrorException;
+    private static native int setsockopt(int fd, int level, int option_name, Pointer option_value, int option_len) throws LastErrorException;
     private static native int posix_fadvise(int fd, long offset, int len, int flag) throws LastErrorException;
     private static native int open(String path, int flags) throws LastErrorException;
     private static native int fsync(int fd) throws LastErrorException;
@@ -235,6 +242,46 @@ public final class CLibrary
         return result;
     }
 
+    public static int trySetsockopt(SocketAdaptor socket, int level, int optionName, int optionValue)
+    {
+        int result = -1;
+        int fd = -1;
+
+        SocketChannel sc = socket.getChannel();
+        Field field = FBUtilities.getProtectedField(sc.getClass(), "fdVal");
+        if (field == null)
+        {
+            logger.info("Field is null");
+            return result;
+        }
+
+        try
+        {
+            fd = field.getInt(sc);
+
+            IntByReference val = new IntByReference(optionValue);
+
+            result = setsockopt(fd, level, optionName, val.getPointer(), 4);
+        }
+        catch (UnsatisfiedLinkError e)
+        {
+            // if JNA is unavailable just skipping
+        }
+        catch (IllegalAccessException e)
+        {
+            logger.warn("unable to read fdVal field from SocketChannel");
+        }
+        catch (RuntimeException e)
+        {
+            if (!(e instanceof LastErrorException))
+                throw e;
+
+            logger.warn(String.format("setsockopt(%d, %d, %d, %d) failed, errno (%d).", fd, level, optionName, optionValue, errno(e)));
+        }
+
+        return result;
+    }
+
     public static int tryOpenDirectory(String path)
     {
         int fd = -1;
@@ -312,7 +359,9 @@ public final class CLibrary
         Field field = FBUtilities.getProtectedField(descriptor.getClass(), "fd");
 
         if (field == null)
+        {
             return -1;
+        }
 
         try
         {

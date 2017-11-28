@@ -42,9 +42,12 @@ import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.xxhash.XXHashFactory;
 
+import sun.nio.ch.SocketAdaptor;
+
 import org.apache.cassandra.io.util.DataOutputStreamPlus;
 import org.apache.cassandra.tracing.TraceState;
 import org.apache.cassandra.tracing.Tracing;
+import org.apache.cassandra.utils.CLibrary;
 import org.apache.cassandra.utils.CoalescingStrategies;
 import org.apache.cassandra.utils.CoalescingStrategies.Coalescable;
 import org.apache.cassandra.utils.CoalescingStrategies.CoalescingStrategy;
@@ -395,6 +398,12 @@ public class OutboundTcpConnection extends Thread
                 else
                 {
                     socket.setTcpNoDelay(DatabaseDescriptor.getInterDCTcpNoDelay());
+                }
+                if (DatabaseDescriptor.getOutboundSocketTcpUserTimeout() != null)
+                {
+                    // 6 = IPPROTO_TCP, 18 = TCP_USER_TIMEOUT
+                    int ret = CLibrary.trySetsockopt((SocketAdaptor) socket, 6, 18, DatabaseDescriptor.getOutboundSocketTcpUserTimeout());
+                    logger.info("Setting TCP_USER_TIMEOUT on outbound socket to {} ms: {}", DatabaseDescriptor.getOutboundSocketTcpUserTimeout(), ret);
                 }
                 if (DatabaseDescriptor.getInternodeSendBufferSize() != null)
                 {

@@ -1637,6 +1637,11 @@ public class DatabaseDescriptor
         conf.row_cache_keys_to_save = rowCacheKeysToSave;
     }
 
+    public static Integer getOutboundSocketTcpUserTimeout()
+    {
+        return conf.outbound_socket_tcp_user_timeout_in_ms;
+    }
+
     public static int getStreamingSocketTimeout()
     {
         return conf.streaming_socket_timeout_in_ms;
