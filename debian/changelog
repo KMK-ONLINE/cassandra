@@ -1,3 +1,9 @@
+cassandra (2.1.19-4) unstable; urgency=medium
+
+  * Custom build with less verbose logging and configurable hint replay interval
+
+ -- Muhammad Hallaj bin Subery and Yap Sok Ann <pair+muhammad+yap@kmkonline.co.id>  Wed, 13 Dec 2017 12:14:44 +0700
+
 cassandra (2.1.19-3) unstable; urgency=medium
 
   * Custom build that allows setting TCP_USER_TIMEOUT on outbound socket
