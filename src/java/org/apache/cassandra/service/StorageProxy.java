@@ -70,6 +70,8 @@ public class StorageProxy implements StorageProxyMBean
 {
     public static final String MBEAN_NAME = "org.apache.cassandra.db:type=StorageProxy";
     private static final Logger logger = LoggerFactory.getLogger(StorageProxy.class);
+    private static final Logger loggerStoredHint = LoggerFactory.getLogger("org.apache.cassandra.plus.StoredHint");
+    private static final Logger loggerDroppedMessage = LoggerFactory.getLogger("org.apache.cassandra.plus.DroppedMessage");
 
     public static final String UNREACHABLE = "UNREACHABLE";
 
@@ -1005,7 +1007,7 @@ public class StorageProxy implements StorageProxyMBean
                 int ttl = HintedHandOffManager.calculateHintTTL(mutation);
                 if (ttl > 0)
                 {
-                    logger.info("Adding hint for {} for mutation {}", target, mutation.toString(true));
+                    loggerStoredHint.debug("Adding hint for {} for mutation {}", target, mutation.toString(true));
                     writeHintForMutation(mutation, System.currentTimeMillis(), ttl, target);
                     // Notify the handler only for CL == ANY
                     if (responseHandler != null && responseHandler.consistencyLevel == ConsistencyLevel.ANY)
@@ -2250,7 +2252,7 @@ public class StorageProxy implements StorageProxyMBean
 
             if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - constructionTime) > DatabaseDescriptor.getTimeout(verb))
             {
-                logger.info("Message dropped;"
+                loggerDroppedMessage.debug("Message dropped;"
                     + " constructionTime: {},"
                     + " timeout: {},"
                     + " verb: {}",
@@ -2289,7 +2291,7 @@ public class StorageProxy implements StorageProxyMBean
                 if (MessagingService.DROPPABLE_VERBS.contains(verb()))
                 {
                     T payload = payload();
-                    logger.info("Message dropped;"
+                    loggerDroppedMessage.debug("Message dropped;"
                         + " constructionTime: {},"
                         + " timeout: {},"
                         + " verb: {},"

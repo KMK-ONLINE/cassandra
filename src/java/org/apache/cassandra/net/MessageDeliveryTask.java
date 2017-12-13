@@ -27,6 +27,7 @@ import org.apache.cassandra.gms.Gossiper;
 public class MessageDeliveryTask implements Runnable
 {
     private static final Logger logger = LoggerFactory.getLogger(MessageDeliveryTask.class);
+    private static final Logger loggerDroppedMessage = LoggerFactory.getLogger("org.apache.cassandra.plus.DroppedMessage");
 
     private final MessageIn message;
     private final int id;
@@ -48,7 +49,7 @@ public class MessageDeliveryTask implements Runnable
         if (MessagingService.DROPPABLE_VERBS.contains(verb)
             && System.currentTimeMillis() > constructionTime + message.getTimeout())
         {
-            logger.info("Message dropped;"
+            loggerDroppedMessage.debug("Message dropped;"
                 + " constructionTime: {},"
                 + " isCrossNodeTimestamp: {},"
                 + " timeout: {},"
