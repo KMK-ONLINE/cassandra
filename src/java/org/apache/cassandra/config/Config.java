@@ -197,6 +197,9 @@ public class Config
     public int max_hints_delivery_threads = 1;
     public int sstable_preemptive_open_interval_in_mb = 50;
 
+    public int hint_replay_interval_in_seconds = 600;
+    public int hint_replay_count_before_compaction = 1;
+
     public volatile boolean incremental_backups = false;
     public boolean trickle_fsync = false;
     public int trickle_fsync_interval_in_kb = 10240;

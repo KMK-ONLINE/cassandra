@@ -50,6 +50,14 @@ hinted_handoff_throttle_in_kb: 1024
 # cross-dc handoff tends to be slower
 max_hints_delivery_threads: 2
 
+# Schedule for hint replay, default is every 10 minutes if unset.
+# hint_replay_interval_in_seconds: 600
+
+# Only trigger a compaction on the system.hints table after certain number of
+# hint replay run. Default is 1 if unset, i.e. every hint replay run will
+# trigger such compaction.
+# hint_replay_count_before_compaction: 1
+
 # Maximum throttle in KBs per second, total. This will be
 # reduced proportionally to the number of nodes in the cluster.
 batchlog_replay_throttle_in_kb: 1024

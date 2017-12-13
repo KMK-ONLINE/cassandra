@@ -1436,6 +1436,16 @@ public class DatabaseDescriptor
         return conf.max_hint_window_in_ms;
     }
 
+    public static int getHintReplayInterval()
+    {
+        return conf.hint_replay_interval_in_seconds;
+    }
+
+    public static int getHintReplayCountBeforeCompaction()
+    {
+	return conf.hint_replay_count_before_compaction;
+    }
+
     @Deprecated
     public static Integer getIndexInterval()
     {

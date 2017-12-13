@@ -103,6 +103,8 @@ public class HintedHandOffManager implements HintedHandOffManagerMBean
 
     private volatile boolean hintedHandOffPaused = false;
 
+    private int runIndex = 0;
+
     static final int maxHintTTL = Integer.parseInt(System.getProperty("cassandra.maxHintTTL", String.valueOf(Integer.MAX_VALUE)));
 
     private final NonBlockingHashSet<InetAddress> queuedDeliveries = new NonBlockingHashSet<>();
@@ -183,7 +185,7 @@ public class HintedHandOffManager implements HintedHandOffManagerMBean
                 metrics.log();
             }
         };
-        executor.scheduleWithFixedDelay(runnable, 10, 10, TimeUnit.MINUTES);
+        executor.scheduleWithFixedDelay(runnable, 300, DatabaseDescriptor.getHintReplayInterval(), TimeUnit.SECONDS);
     }
 
     private static void deleteHint(ByteBuffer tokenBytes, CellName columnName, long timestamp)
@@ -514,12 +516,18 @@ public class HintedHandOffManager implements HintedHandOffManagerMBean
      */
     private void scheduleAllDeliveries()
     {
-        logger.debug("Started scheduleAllDeliveries");
+        logger.debug("Started scheduleAllDeliveries run #{}", runIndex);
 
         // Force a major compaction to get rid of the tombstones and expired hints. Do it once, before we schedule any
         // individual replay, to avoid N - 1 redundant individual compactions (when N is the number of nodes with hints
         // to deliver to).
-        compact();
+        // As hint replay interval is now configurable and can be set to a rather low value, we don't want to trigger
+        // compaction on each hint replay run.
+        if (runIndex % DatabaseDescriptor.getHintReplayCountBeforeCompaction() == 0)
+        {
+            logger.debug("Performing compaction before hint delivery");
+            compact();
+        }
 
         IPartitioner p = StorageService.getPartitioner();
         RowPosition minPos = p.getMinimumToken().minKeyBound();
@@ -535,7 +543,8 @@ public class HintedHandOffManager implements HintedHandOffManagerMBean
                 scheduleHintDelivery(target, false);
         }
 
-        logger.debug("Finished scheduleAllDeliveries");
+        logger.debug("Finished scheduleAllDeliveries run #{}", runIndex);
+        runIndex++;
     }
 
     /*
