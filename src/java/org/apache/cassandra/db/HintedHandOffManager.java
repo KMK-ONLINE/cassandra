@@ -103,6 +103,8 @@ public class HintedHandOffManager implements HintedHandOffManagerMBean
 
     private volatile boolean hintedHandOffPaused = false;
 
+    private volatile boolean precompactInNextRun = false;
+
     private int runIndex = 0;
 
     static final int maxHintTTL = Integer.parseInt(System.getProperty("cassandra.maxHintTTL", String.valueOf(Integer.MAX_VALUE)));
@@ -399,6 +401,7 @@ public class HintedHandOffManager implements HintedHandOffManagerMBean
             if (pagingFinished(hintsPage, startColumn))
             {
                 logger.info("Finished hinted handoff of {} rows to endpoint {}", rowsReplayed, endpoint);
+                precompactInNextRun = true;
                 break;
             }
 
@@ -523,8 +526,9 @@ public class HintedHandOffManager implements HintedHandOffManagerMBean
         // to deliver to).
         // As hint replay interval is now configurable and can be set to a rather low value, we don't want to trigger
         // compaction on each hint replay run.
-        if (runIndex % DatabaseDescriptor.getHintReplayCountBeforeCompaction() == 0)
+        if (runIndex % DatabaseDescriptor.getHintReplayCountBeforeCompaction() == 0 || precompactInNextRun)
         {
+            precompactInNextRun = false;
             logger.debug("Performing compaction before hint delivery");
             compact();
         }
