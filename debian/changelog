@@ -1,3 +1,9 @@
+cassandra (2.1.19-5) unstable; urgency=medium
+
+  * Custom build that always triggers a compaction on the next hint replay run after a successful delivery
+
+ -- Muhammad Hallaj bin Subery and Yap Sok Ann <pair+muhammad+yap@kmkonline.co.id>  Wed, 14 Dec 2017 07:26:44 +0700
+
 cassandra (2.1.19-4) unstable; urgency=medium
 
   * Custom build with less verbose logging and configurable hint replay interval
