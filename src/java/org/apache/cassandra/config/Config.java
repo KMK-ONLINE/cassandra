@@ -87,6 +87,8 @@ public class Config
 
     public Integer outbound_socket_tcp_user_timeout_in_ms;
 
+    public Integer outbound_socket_connect_timeout_in_ms;
+
     public Integer streaming_socket_timeout_in_ms = 86400000; //24 hours
 
     public boolean cross_node_timeout = false;

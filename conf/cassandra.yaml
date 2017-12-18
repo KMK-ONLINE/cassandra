@@ -663,6 +663,10 @@ cross_node_timeout: false
 # dead connection, which takes 13 to 30 minutes by default (see `man tcp`).
 outbound_socket_tcp_user_timeout_in_ms: 10000
 
+# Abort and reconnect to the remote node using the defined timeout
+# rather than waiting for `/proc/sys/net/ipv4/tcp_syn_retries`
+outbound_socket_connect_timeout_in_ms: 5000
+
 # Set socket timeout for streaming operation.
 # The stream session is failed if no data/ack is received by any of the participants
 # within that period, which means this should also be sufficient to stream a large

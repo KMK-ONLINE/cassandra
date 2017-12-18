@@ -134,7 +134,14 @@ public class OutboundTcpConnectionPool
             SocketChannel channel = SocketChannel.open();
             if (!Config.getOutboundBindAny())
                 channel.bind(new InetSocketAddress(FBUtilities.getLocalAddress(), 0));
-            channel.connect(new InetSocketAddress(endpoint, DatabaseDescriptor.getStoragePort()));
+            if (DatabaseDescriptor.getOutboundSocketConnectTimeout() == null)
+            {
+                channel.connect(new InetSocketAddress(endpoint, DatabaseDescriptor.getStoragePort()));
+            }
+            else
+            {
+                channel.socket().connect(new InetSocketAddress(endpoint, DatabaseDescriptor.getStoragePort()), DatabaseDescriptor.getOutboundSocketConnectTimeout());
+            }
             return channel.socket();
         }
     }
