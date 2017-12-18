@@ -1,3 +1,9 @@
+cassandra (2.1.19-6) unstable; urgency=medium
+
+  * Custom build that allows setting connection timeout on outbound socket
+
+ -- Muhammad Hallaj bin Subery and Yap Sok Ann <pair+muhammad+yap@kmkonline.co.id>  Mon, 18 Dec 2017 11:06:44 +0700
+
 cassandra (2.1.19-5) unstable; urgency=medium
 
   * Custom build that always triggers a compaction on the next hint replay run after a successful delivery
