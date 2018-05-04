@@ -34,6 +34,8 @@ public interface FailureDetectorMBean
 
     public Map<String, String> getSimpleStates();
 
+    public Map<String, Integer> getDownEndpoints();
+
     public int getDownEndpointCount();
 
     public int getUpEndpointCount();
