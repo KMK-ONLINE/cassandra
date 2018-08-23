@@ -131,6 +131,17 @@ public class FailureDetector implements IFailureDetector, FailureDetectorMBean
         return nodesStatus;
     }
 
+    public Map<String, Integer> getDownEndpoints()
+    {
+        Map<String, Integer> downEndpoints = new HashMap<String, Integer>();
+        for (Map.Entry<InetAddress, EndpointState> entry : Gossiper.instance.endpointStateMap.entrySet())
+        {
+            if (!entry.getValue().isAlive())
+                downEndpoints.put(entry.getKey().toString(), 1);
+        }
+        return downEndpoints;
+    }
+
     public int getDownEndpointCount()
     {
         int count = 0;
