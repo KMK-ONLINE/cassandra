@@ -2226,6 +2226,11 @@ public class DatabaseDescriptor
         return conf.outbound_socket_tcp_user_timeout_in_ms;
     }
 
+    public static Integer getOutboundSocketConnectTimeout()
+    {
+        return conf.outbound_socket_connect_timeout_in_ms;
+    }
+
     public static int getStreamingKeepAlivePeriod()
     {
         return conf.streaming_keep_alive_period_in_secs;

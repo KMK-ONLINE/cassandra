@@ -103,6 +103,8 @@ public class Config
 
     public Integer outbound_socket_tcp_user_timeout_in_ms = 10000;
 
+    public Integer outbound_socket_connect_timeout_in_ms = 5000;
+
     public Integer streaming_keep_alive_period_in_secs = 300; //5 minutes
 
     public boolean cross_node_timeout = false;

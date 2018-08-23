@@ -135,15 +135,20 @@ public class OutboundTcpConnectionPool
     @SuppressWarnings("resource") // Closing the socket will close the underlying channel.
     public static Socket newSocket(InetAddress endpoint) throws IOException
     {
-        // zero means 'bind on any available port.'
+        int connectTimeout = DatabaseDescriptor.getOutboundSocketConnectTimeout();
+
         if (isEncryptedChannel(endpoint))
         {
-            return SSLFactory.getSocket(DatabaseDescriptor.getServerEncryptionOptions(), endpoint, DatabaseDescriptor.getSSLStoragePort());
+            InetSocketAddress socketAddress = new InetSocketAddress(endpoint, DatabaseDescriptor.getSSLStoragePort());
+            Socket socket = SSLFactory.getSocket(DatabaseDescriptor.getServerEncryptionOptions());
+            socket.connect(socketAddress, connectTimeout);
+            return socket;
         }
         else
         {
+            InetSocketAddress socketAddress = new InetSocketAddress(endpoint, DatabaseDescriptor.getStoragePort());
             SocketChannel channel = SocketChannel.open();
-            channel.connect(new InetSocketAddress(endpoint, DatabaseDescriptor.getStoragePort()));
+            channel.socket().connect(socketAddress, connectTimeout);
             return channel.socket();
         }
     }

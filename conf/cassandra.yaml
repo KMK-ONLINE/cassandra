@@ -892,6 +892,17 @@ cross_node_timeout: false
 # dead connection, which takes 13 to 30 minutes by default (see `man tcp`).
 outbound_socket_tcp_user_timeout_in_ms: 10000
 
+# Set timeout when trying to establish outbount connection.
+#
+# When set to 0, we rely on system-wide "tcp_syn_retries" parameter to abort
+# the attempt, which takes approximately 180 seconds (see `man tcp`).
+#
+# Note that the intention here is to have precise control over the time between
+# retries. With "tcp_syn_retries", there can be a delay of more than 30 seconds
+# in between retransmissions of the initial SYN packet, which is a little long
+# for temporary network hiccup that happens regularly in the cloud.
+outbound_socket_connect_timeout_in_ms: 5000
+
 # Set keep-alive period for streaming
 # This node will send a keep-alive message periodically with this period.
 # If the node does not receive a keep-alive message from the peer for
