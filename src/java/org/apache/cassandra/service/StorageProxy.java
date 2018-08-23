@@ -80,6 +80,8 @@ public class StorageProxy implements StorageProxyMBean
 {
     public static final String MBEAN_NAME = "org.apache.cassandra.db:type=StorageProxy";
     private static final Logger logger = LoggerFactory.getLogger(StorageProxy.class);
+    private static final Logger loggerStoredHint = LoggerFactory.getLogger("org.apache.cassandra.plus.StoredHint");
+    private static final Logger loggerDroppedMessage = LoggerFactory.getLogger("org.apache.cassandra.plus.DroppedMessage");
 
     public static final String UNREACHABLE = "UNREACHABLE";
 
@@ -2589,6 +2591,14 @@ public class StorageProxy implements StorageProxyMBean
             long timeTaken = System.currentTimeMillis() - constructionTime;
             if (timeTaken > verb.getTimeout())
             {
+                loggerDroppedMessage.debug("Message dropped;"
+                    + " timeout: {},"
+                    + " timeTaken: {},"
+                    + " verb: {}",
+                    verb.getTimeout(),
+                    timeTaken,
+                    verb);
+
                 MessagingService.instance().incrementDroppedMessages(verb, timeTaken);
                 return;
             }
@@ -2633,7 +2643,17 @@ public class StorageProxy implements StorageProxyMBean
             if (timeTaken > mutationTimeout)
             {
                 if (MessagingService.DROPPABLE_VERBS.contains(verb))
+                {
+                    loggerDroppedMessage.debug("Mutation dropped;"
+                        + " timeout: {},"
+                        + " timeTaken: {},"
+                        + " mutation: {}",
+                        mutationTimeout,
+                        timeTaken,
+                        mutationOpt);
+
                     MessagingService.instance().incrementDroppedMutations(mutationOpt, timeTaken);
+                }
                 HintRunnable runnable = new HintRunnable(Collections.singleton(FBUtilities.getBroadcastAddress()))
                 {
                     protected void runMayThrow() throws Exception
@@ -2757,7 +2777,7 @@ public class StorageProxy implements StorageProxyMBean
                     else
                         logger.debug("Discarding hint for endpoint not part of ring: {}", target);
                 }
-                logger.trace("Adding hints for {}", validTargets);
+                loggerStoredHint.debug("Adding hints for {} for mutation {}", validTargets, mutation.toString(true));
                 HintsService.instance.write(hostIds, Hint.create(mutation, System.currentTimeMillis()));
                 validTargets.forEach(HintsService.instance.metrics::incrCreatedHints);
                 // Notify the handler only for CL == ANY

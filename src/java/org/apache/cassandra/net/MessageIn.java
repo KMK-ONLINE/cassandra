@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.apache.cassandra.concurrent.Stage;
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.IMutation;
 import org.apache.cassandra.db.monitoring.ApproximateTime;
 import org.apache.cassandra.exceptions.RequestFailureReason;
 import org.apache.cassandra.io.IVersionedSerializer;
@@ -40,13 +41,15 @@ public class MessageIn<T>
     public final MessagingService.Verb verb;
     public final int version;
     public final long constructionTime;
+    public final int payloadSize;
 
     private MessageIn(InetAddress from,
                       T payload,
                       Map<String, byte[]> parameters,
                       MessagingService.Verb verb,
                       int version,
-                      long constructionTime)
+                      long constructionTime,
+                      int payloadSize)
     {
         this.from = from;
         this.payload = payload;
@@ -54,6 +57,18 @@ public class MessageIn<T>
         this.verb = verb;
         this.version = version;
         this.constructionTime = constructionTime;
+        this.payloadSize = payloadSize;
+    }
+
+    public static <T> MessageIn<T> create(InetAddress from,
+                                          T payload,
+                                          Map<String, byte[]> parameters,
+                                          MessagingService.Verb verb,
+                                          int version,
+                                          long constructionTime,
+                                          int payloadSize)
+    {
+        return new MessageIn<>(from, payload, parameters, verb, version, constructionTime, payloadSize);
     }
 
     public static <T> MessageIn<T> create(InetAddress from,
@@ -63,7 +78,7 @@ public class MessageIn<T>
                                           int version,
                                           long constructionTime)
     {
-        return new MessageIn<>(from, payload, parameters, verb, version, constructionTime);
+        return new MessageIn<>(from, payload, parameters, verb, version, constructionTime, -1);
     }
 
     public static <T> MessageIn<T> create(InetAddress from,
@@ -72,7 +87,7 @@ public class MessageIn<T>
                                           MessagingService.Verb verb,
                                           int version)
     {
-        return new MessageIn<>(from, payload, parameters, verb, version, ApproximateTime.currentTimeMillis());
+        return new MessageIn<>(from, payload, parameters, verb, version, ApproximateTime.currentTimeMillis(), -1);
     }
 
     public static <T2> MessageIn<T2> read(DataInputPlus in, int version, int id) throws IOException
@@ -118,10 +133,10 @@ public class MessageIn<T>
             serializer = (IVersionedSerializer<T2>) callback.serializer;
         }
         if (payloadSize == 0 || serializer == null)
-            return create(from, null, parameters, verb, version, constructionTime);
+            return create(from, null, parameters, verb, version, constructionTime, payloadSize);
 
         T2 payload = serializer.deserialize(in, version);
-        return MessageIn.create(from, payload, parameters, verb, version, constructionTime);
+        return MessageIn.create(from, payload, parameters, verb, version, constructionTime, payloadSize);
     }
 
     public static long readConstructionTime(InetAddress from, DataInputPlus input, long currentTime) throws IOException
@@ -212,7 +227,13 @@ public class MessageIn<T>
     public String toString()
     {
         StringBuilder sbuf = new StringBuilder();
-        sbuf.append("FROM:").append(from).append(" TYPE:").append(getMessageType()).append(" VERB:").append(verb);
+        sbuf.append("FROM:").append(from)
+            .append(" TYPE:").append(getMessageType())
+            .append(" VERB:").append(verb)
+            .append(" SIZE:").append(payloadSize);
+        if (payload instanceof IMutation) {
+          sbuf.append(" PAYLOAD:").append(((IMutation) payload).toString(true));
+        }
         return sbuf.toString();
     }
 }

@@ -32,6 +32,7 @@ import org.apache.cassandra.io.util.DataOutputBuffer;
 public class MessageDeliveryTask implements Runnable
 {
     private static final Logger logger = LoggerFactory.getLogger(MessageDeliveryTask.class);
+    private static final Logger loggerDroppedMessage = LoggerFactory.getLogger("org.apache.cassandra.plus.DroppedMessage");
 
     private final MessageIn message;
     private final int id;
@@ -50,6 +51,14 @@ public class MessageDeliveryTask implements Runnable
         if (MessagingService.DROPPABLE_VERBS.contains(verb)
             && timeTaken > message.getTimeout())
         {
+            loggerDroppedMessage.debug("Message dropped;"
+                + " timeout: {},"
+                + " timeTaken: {},"
+                + " message: {}",
+                message.getTimeout(),
+                timeTaken,
+                message);
+
             MessagingService.instance().incrementDroppedMessages(message, timeTaken);
             return;
         }
