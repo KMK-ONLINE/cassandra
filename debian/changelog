@@ -1,3 +1,12 @@
+cassandra (3.11.3-1) unstable; urgency=medium
+
+  * Log dropped messages and stored hints
+  * Set TCP user timeout on outbound connection to detect its death sooner
+  * Allow setting connection timeout on outbound socket
+  * Add a JMX attribute that returns just the down nodes
+
+ -- Yap Sok Ann <sokann@gmail.com>  Thu, 23 Aug 2018 12:46:44 +0700
+
 cassandra (3.11.3) unstable; urgency=medium
 
   * New release
