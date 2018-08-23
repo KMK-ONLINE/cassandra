@@ -70,6 +70,7 @@ public class NativeLibraryLinux implements NativeLibraryWrapper
     private static native int mlockall(int flags) throws LastErrorException;
     private static native int munlockall() throws LastErrorException;
     private static native int fcntl(int fd, int command, long flags) throws LastErrorException;
+    private static native int setsockopt(int fd, int level, int option_name, Pointer option_value, int option_len) throws LastErrorException;
     private static native int posix_fadvise(int fd, long offset, int len, int flag) throws LastErrorException;
     private static native int open(String path, int flags) throws LastErrorException;
     private static native int fsync(int fd) throws LastErrorException;
@@ -90,6 +91,11 @@ public class NativeLibraryLinux implements NativeLibraryWrapper
     public int callFcntl(int fd, int command, long flags) throws UnsatisfiedLinkError, RuntimeException
     {
         return fcntl(fd, command, flags);
+    }
+
+    public int callSetsockopt(int fd, int level, int option_name, Pointer option_value, int option_len) throws UnsatisfiedLinkError, RuntimeException
+    {
+        return setsockopt(fd, level, option_name, option_value, option_len);
     }
 
     public int callPosixFadvise(int fd, long offset, int len, int flag) throws UnsatisfiedLinkError, RuntimeException

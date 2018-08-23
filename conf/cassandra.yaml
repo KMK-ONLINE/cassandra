@@ -871,6 +871,27 @@ slow_query_log_timeout_in_ms: 500
 # and the times are synchronized between the nodes.
 cross_node_timeout: false
 
+# Set timeout on established outbound connection to detect its death sooner. As
+# per RFC 5482, "[t]he TCP user timeout controls how long transmitted data
+# may remain unacknowledged before a connection is forcefully closed".
+#
+# In a multi-dc environment, there could be some stateful firewall along the
+# path that just drops a connection silently without sending a TCP reset. Let's
+# say this happens to dc A node A1's outbound connection to dc B node B1. With
+# cross-dc forwarding (CASSANDRA-1530), node A1 will be storing hints for all
+# mutations it coordinates, for all replicas in dc B, where node B1 is the
+# first natural endpoint for the keys, until the connection get re-established.
+#
+# In this case, if we want strong consistency and write at CL=EACH_QUORUM, the
+# requests will just fail, for minutes. Else, if we go with CL=LOCAL_QUORUM,
+# the eventual consisteny in dc B will become really eventual, i.e. until hints
+# get replayed to the other replicas in dc B. There is no good solution other
+# than killing the connection as early as we can.
+#
+# When set to 0, we rely on system-wide "tcp_retries2" parameter to detect such
+# dead connection, which takes 13 to 30 minutes by default (see `man tcp`).
+outbound_socket_tcp_user_timeout_in_ms: 10000
+
 # Set keep-alive period for streaming
 # This node will send a keep-alive message periodically with this period.
 # If the node does not receive a keep-alive message from the peer for

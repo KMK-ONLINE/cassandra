@@ -22,14 +22,21 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.Socket;
+import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.jna.LastErrorException;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.IntByReference;
+
 import sun.nio.ch.FileChannelImpl;
+import sun.nio.ch.SocketAdaptor;
 
 import static org.apache.cassandra.utils.NativeLibrary.OSType.LINUX;
 import static org.apache.cassandra.utils.NativeLibrary.OSType.MAC;
@@ -74,11 +81,15 @@ public final class NativeLibrary
 
     private static final Field FILE_DESCRIPTOR_FD_FIELD;
     private static final Field FILE_CHANNEL_FD_FIELD;
+    private static final Field SOCKET_IMPL_FIELD;
+    private static final Field SOCKET_IMPL_FD_FIELD;
 
     static
     {
         FILE_DESCRIPTOR_FD_FIELD = FBUtilities.getProtectedField(FileDescriptor.class, "fd");
         FILE_CHANNEL_FD_FIELD = FBUtilities.getProtectedField(FileChannelImpl.class, "fd");
+        SOCKET_IMPL_FIELD = FBUtilities.getProtectedField(Socket.class, "impl");
+        SOCKET_IMPL_FD_FIELD = FBUtilities.getProtectedField(SocketImpl.class, "fd");
 
         // detect the OS type the JVM is running on and then set the CLibraryWrapper
         // instance to a compatable implementation of CLibraryWrapper for that OS type
@@ -284,6 +295,32 @@ public final class NativeLibrary
         return result;
     }
 
+    public static int trySetsockopt(Socket socket, int level, int optionName, int optionValue)
+    {
+        int fd = getfd(socket);
+        if (fd == -1)
+            return -1;
+
+        try
+        {
+            IntByReference val = new IntByReference(optionValue);
+            return wrappedLibrary.callSetsockopt(fd, level, optionName, val.getPointer(), 4);
+        }
+        catch (UnsatisfiedLinkError e)
+        {
+            // if JNA is unavailable just skipping
+        }
+        catch (RuntimeException e)
+        {
+            if (!(e instanceof LastErrorException))
+                throw e;
+
+            logger.warn("setsockopt({}, {}, {}, {}) failed, errno ({}).", fd, level, optionName, optionValue, errno(e));
+        }
+
+        return -1;
+    }
+
     public static int tryOpenDirectory(String path)
     {
         int fd = -1;
@@ -362,6 +399,61 @@ public final class NativeLibrary
             logger.warn("Unable to read fd field from FileChannel");
         }
         return -1;
+    }
+
+    public static int getfd(Socket socket)
+    {
+        FileDescriptor descriptor = null;
+
+        // Normal socket, used by encrypted inter-node connection
+        if (socket.getChannel() == null)
+        {
+            descriptor = getFileDescriptorFromSocket(socket);
+        }
+        // SocketAdaptor, used by normal inter-node connection
+        else
+        {
+            descriptor = getFileDescriptorFromSocketAdaptor((SocketAdaptor) socket);
+        }
+
+        if (descriptor == null)
+            return -1;
+
+        return getfd(descriptor);
+    }
+
+    private static FileDescriptor getFileDescriptorFromSocket(Socket socket)
+    {
+        // Normal socket, with a package-private SocketImpl field, that has a
+        // private FileDescriptor field.
+        try
+        {
+            SocketImpl impl = (SocketImpl) SOCKET_IMPL_FIELD.get(socket);
+            return (FileDescriptor) SOCKET_IMPL_FD_FIELD.get(impl);
+        }
+        catch (IllegalArgumentException|IllegalAccessException e)
+        {
+            logger.warn("Unable to get FileDescriptor from Socket");
+        }
+        return null;
+    }
+
+    private static FileDescriptor getFileDescriptorFromSocketAdaptor(SocketAdaptor socket)
+    {
+        // SocketAdaptor, with a getter that returns a SocketChannelImpl, that
+        // has a private FileDescriptor field.
+        try
+        {
+            SocketChannel channel = socket.getChannel();
+            // Need to do `channel.getClass()` as SocketChannelImpl is package
+            // private, and can't be imported.
+            return (FileDescriptor) FBUtilities.getProtectedField(channel.getClass(), "fd").get(channel);
+        }
+        catch (IllegalArgumentException|IllegalAccessException e)
+        {
+            logger.warn("Unable to get FileDescriptor from SocketAdaptor");
+        }
+        return null;
     }
 
     /**

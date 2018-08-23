@@ -82,6 +82,11 @@ public class NativeLibraryWindows implements NativeLibraryWrapper
         throw new UnsatisfiedLinkError();
     }
 
+    public int callSetsockopt(int fd, int level, int option_name, Pointer option_value, int option_len) throws UnsatisfiedLinkError, RuntimeException
+    {
+        throw new UnsatisfiedLinkError();
+    }
+
     public int callPosixFadvise(int fd, long offset, int len, int flag) throws UnsatisfiedLinkError, RuntimeException
     {
         throw new UnsatisfiedLinkError();

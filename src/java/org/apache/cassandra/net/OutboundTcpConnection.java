@@ -59,6 +59,7 @@ import org.apache.cassandra.utils.CoalescingStrategies.CoalescingStrategy;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.JVMStabilityInspector;
 import org.apache.cassandra.utils.NanoTimeToCurrentTimeMillis;
+import org.apache.cassandra.utils.NativeLibrary;
 import org.apache.cassandra.utils.UUIDGen;
 import org.xerial.snappy.SnappyOutputStream;
 import org.apache.cassandra.config.Config;
@@ -440,6 +441,15 @@ public class OutboundTcpConnection extends FastThreadLocalThread
                 else
                 {
                     socket.setTcpNoDelay(DatabaseDescriptor.getInterDCTcpNoDelay());
+                }
+                if (DatabaseDescriptor.getOutboundSocketTcpUserTimeout() > 0)
+                {
+                    int ret = NativeLibrary.trySetsockopt(
+                        socket,
+                        6, // IPPROTO_TCP
+                        18, // TCP_USER_TIMEOUT
+                        DatabaseDescriptor.getOutboundSocketTcpUserTimeout());
+                    logger.info("Setting TCP_USER_TIMEOUT on outbound socket to {} ms: {}", DatabaseDescriptor.getOutboundSocketTcpUserTimeout(), ret);
                 }
                 if (DatabaseDescriptor.getInternodeSendBufferSize() > 0)
                 {
